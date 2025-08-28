@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard IoT - ThingSpeak</title>
+  <style>
+    :root{
+      --bg: #0f172a;
+      --panel: #111827;
+      --ink: #e5e7eb;
+      --muted: #94a3b8;
+      --brand: #22d3ee;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+      --card: #0b1220;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box }
+    body{
+      margin:0;
+      background: radial-gradient(1200px 800px at 10% -10%, #172554 0%, transparent 50%), var(--bg);
+      color: var(--ink);
+      font: 500 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto;
+    }
+    .wrap{ max-width: 1200px; margin: 24px auto; padding: 0 16px }
+    header{
+      display:flex; align-items:center; gap:14px; margin-bottom: 18px;
+    }
+    h1{ font-size: 24px; margin:0; font-weight: 800 }
+    .toolbar{ display:flex; flex-wrap:wrap; gap:10px; margin-left:auto; align-items:center }
+    .btn, input, select{
+      border:0; outline:0; background: var(--panel); color: var(--ink);
+      padding:10px 14px; border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+    input, select{ min-width: 120px }
+    .grid{ display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    .card{ background: var(--panel); border:1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius); box-shadow: var(--shadow); padding: 8px; }
+    .card h4{ margin:8px 12px; font-size: 14px; font-weight:600; color: var(--muted) }
+    .card iframe{ width: 100%; height: 300px; border:0; background: #010409; border-radius: 14px }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Monitoramento IoT</h1>
+    <div class="toolbar">
+      <input type="text" id="channelId" placeholder="Channel ID" value="3042989">
+      <input type="text" id="apiKey" placeholder="Read API Key" value="3ITSFVQWVEQG23ZZ">
+      <select id="range">
+        <option value="1">Últimas 24h</option>
+        <option value="3">3 dias</option>
+        <option value="7">7 dias</option>
+        <option value="30">30 dias</option>
+      </select>
+      <select id="smooth">
+        <option value="">Sem média</option>
+        <option value="10">Média 10 pts</option>
+        <option value="30">Média 30 pts</option>
+      </select>
+      <button class="btn" onclick="atualizar()">Atualizar</button>
+    </div>
+  </header>
+
+  <div id="cards" class="grid">
+    <div class="card" data-field="1" data-title="Temperatura">
+      <h4>Temperatura</h4>
+      <iframe></iframe>
+    </div>
+    <div class="card" data-field="2" data-title="Umidade">
+      <h4>Umidade</h4>
+      <iframe></iframe>
+    </div>
+    <div class="card" data-field="3" data-title="Luminosidade">
+      <h4>Luminosidade</h4>
+      <iframe></iframe>
+    </div>
+    <div class="card" data-field="4" data-title="Pressão">
+      <h4>Pressão</h4>
+      <iframe></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+const channelInput = document.getElementById('channelId');
+const keyInput = document.getElementById('apiKey');
+const rangeSel = document.getElementById('range');
+const smoothSel = document.getElementById('smooth');
+
+function montarURL(channel, field, days, avg, key, title){
+  const params = new URLSearchParams({
+    dynamic: 'true',
+    days: String(days),
+    bgcolor: 'transparent',
+    color: 'white'
+  });
+  if (avg) params.set('average', String(avg));
+  if (key) params.set('api_key', key);
+  if (title) params.set('title', title);
+  return `https://thingspeak.com/channels/${channel}/charts/${field}?${params.toString()}`;
+}
+
+function atualizar(){
+  const channel = channelInput.value.trim();
+  const key = keyInput.value.trim();
+  const days = rangeSel.value;
+  const avg = smoothSel.value;
+
+  if (!channel){ return }
+  document.querySelectorAll('#cards .card').forEach(card => {
+    const field = card.dataset.field;
+    const title = card.dataset.title || `Field ${field}`;
+    const url = montarURL(channel, field, days, avg, key, title);
+    const frame = card.querySelector('iframe');
+    if (frame.dataset.src !== url){
+      frame.dataset.src = url;
+      frame.src = url;
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', atualizar);
+</script>
+</body>
+</html>
